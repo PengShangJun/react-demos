@@ -14,13 +14,15 @@
       ];
 
       //CommentBox组件
-      var CommentBox = React.createClass({  
+      var CommentBox = React.createClass({
+        // 自定义方法，从服务器加载评论数据  
         loadCommentsFromServer: function(){
           $.ajax({
             url: this.props.url,
             type: 'GET',           
             cache: false,
-            success: function(data){                         
+            success: function(data){
+              // 设置组件数据，重新渲染                         
               this.setState({data: data});
             }.bind(this),
             error: function(xhr, status, err){
@@ -28,21 +30,31 @@
             }.bind(this)
           });
         },
+        handleCommentPublish: function(comment) {
+          // TODO: submit to the server and refresh the comment list          
+          // 组件现有数据
+          var comments = this.state.data;
+          // 加入新的评论
+          var newComments = comments.concat([comment]);
+          // 重新设置组件的数据，重新渲染
+          this.setState({data: newComments});
+        },
         getInitialState: function() {
+          // 组件初始化数据
           return {data: []};
         },   
-        componentDidMount: function() {                 
+        componentDidMount: function() {  
+          // 渲染组件               
           this.loadCommentsFromServer();
           //setInterval(this.loadCommentsFromServer,this.props.pollInterval);
         },   
+        // 渲染组件
         render: function() {
           return (
             <div className="commentBox">
-              <h1>Comments in Tomcat</h1>  
-               
-              <CommentList data={this.state.data}/> 
-              <CommentForm/>          
-              
+              <h1>Comments in Tomcat</h1>           
+              <CommentList data={this.state.data}/>          
+              <CommentForm onPublishComment={this.handleCommentPublish}/>
             </div>
           );
         }
@@ -71,23 +83,29 @@
       //CommentForm
       var CommentForm = React.createClass({
         publishComment: function(e) {
-          e.preventDefault();
-          var author = this.refs.author.value.trim();
-          var text = this.refs.text.value.trim();
+          console.log("publishComment....");
+          // 阻止浏览器默认提交
+          e.preventDefault(); 
+          // 获取子组件        
+          var author = this.refs.author.getDOMNode().value.trim();
+          var text = this.refs.text.getDOMNode().value.trim();
           if (!text || !author) {
             return;
           }
           // TODO: send request to the server
+          console.log("author:" +  author + "text:" + text);
+          // 
+          this.props.onPublishComment({author: author, text: text});
           this.refs.author.value = '';
           this.refs.text.values = '';
           return;
         },
         render: function() {
           return (
-            <form className="commentForm" onsubmit={this.publishComment}>
-              <input type="text" placeholder="Your Name" />
-              <input type="text" placeholder="Say Something..." />
-              <input type="submit" value="发表">
+            <form className="commentForm" onSubmit={this.publishComment} action="#">
+              <input ref="author" type="text" placeholder="Your Name" />
+              <input ref="text" type="text" placeholder="Say Something..." />
+              <input type="submit" value="publish"/>
             </form>
           );
         }
@@ -98,10 +116,12 @@
         render: function() {
           return (
             <div className="comment">
-              <h2 className="commentAuthor">
-                {this.props.author}
-              </h2>
-              {this.props.children}
+              <h3 className="commentAuthor">
+                {this.props.author}:
+              </h3>
+              <div className="commentContent">
+                {this.props.children}
+              </div>              
             </div>
           );
         }
